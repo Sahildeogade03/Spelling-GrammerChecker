@@ -1,33 +1,21 @@
-!pip install textblob  #install the required library before
-
 import streamlit as st
-from textblob import TextBlob
 import language_tool_python
-from io import StringIO
-from io import BytesIO
+from io import StringIO, BytesIO
 from docx import Document
 
 class SpellCheckerModule:
     def __init__(self):
         self.tool = language_tool_python.LanguageTool('en-US')
 
-    def correct_spell(self, text):
-        words = text.split()
-        corrected_words = []
-        for word in words:
-            corrected_word = str(TextBlob(word).correct())
-            corrected_words.append(corrected_word)
-        return " ".join(corrected_words)
-
-    def correct_grammar(self, text):
+    def correct_spell_and_grammar(self, text):
         matches = self.tool.check(text)
+        corrected_text = language_tool_python.utils.correct(text, matches)
         corrections = []
         for match in matches:
             corrections.append({
                 'incorrect': match.context,
                 'suggestions': match.replacements
             })
-        corrected_text = language_tool_python.utils.correct(text, matches)
         return corrected_text, corrections, len(matches)
 
 # Streamlit App
@@ -39,8 +27,7 @@ spell_checker_module = SpellCheckerModule()
 st.header("Text Input Checker")
 input_text = st.text_area("Enter text for spell and grammar checking:")
 if st.button("Check Spelling and Grammar"):
-    corrected_text = spell_checker_module.correct_spell(input_text)
-    corrected_text, grammar_corrections, grammar_mistakes = spell_checker_module.correct_grammar(corrected_text)
+    corrected_text, grammar_corrections, grammar_mistakes = spell_checker_module.correct_spell_and_grammar(input_text)
     
     st.write("Corrected Text:")
     st.write(corrected_text)
@@ -62,8 +49,7 @@ if uploaded_file is not None:
     file_content = '\n'.join(full_text)
     
     # Correct spelling and grammar in the file
-    corrected_file_text = spell_checker_module.correct_spell(file_content)
-    corrected_file_text, corrected_file_grammar, grammar_mistakes = spell_checker_module.correct_grammar(corrected_file_text)
+    corrected_file_text, corrected_file_grammar, grammar_mistakes = spell_checker_module.correct_spell_and_grammar(file_content)
     
     st.write("Corrected File Text:")
     st.write(corrected_file_text)
@@ -76,9 +62,7 @@ if uploaded_file is not None:
     # Optionally, save the corrected text back to a DOCX file
     output_doc = Document()
     output_doc.add_paragraph(corrected_file_text)
-    output_io = StringIO()
     output_io = BytesIO()
-    output_io.seek(0)
     output_doc.save(output_io)
     
     st.download_button(
