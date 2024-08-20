@@ -1,3 +1,5 @@
+!pip install textblob  #install the required library before
+
 import streamlit as st
 from textblob import TextBlob
 import language_tool_python
